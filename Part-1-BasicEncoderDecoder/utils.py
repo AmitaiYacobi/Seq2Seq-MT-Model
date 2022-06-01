@@ -1,61 +1,44 @@
 import os
+import matplotlib.pyplot as plt
 
 BEGIN_SYMBOL = '<s>'
 END_SYMBOL = '</s>'
 
 def read_data(src_file, trg_file):
+    src_data = open(src_file, 'r')
+    trg_data = open(trg_file, 'r')
 
-    src = open(src_file, "r", encoding="utf-8")
-    trg = open(trg_file, "r", encoding="utf-8")
-
-    s_data = src.readlines()
-    t_data = trg.readlines()
-
-    # train_data = [tuple([begin_symbol] + line.strip().split() + [end_symbol] for line in pair) for pair in zip(f_data, e_data)]
-    src = [[BEGIN_SYMBOL] + line.strip().split() + [END_SYMBOL] for line in s_data]
-    trg = [[BEGIN_SYMBOL] + line.strip().split() + [END_SYMBOL] for line in t_data]
+    src = [[BEGIN_SYMBOL] + line.strip().split() + [END_SYMBOL] for line in src_data]
+    trg = [[BEGIN_SYMBOL] + line.strip().split() + [END_SYMBOL] for line in trg_data]
 
     return src, trg
 
-def create_vocabulary(data):
-    
+def create_vocabulary(train, dev, test):
     vocabulary = set()
-    for line in data:
+
+    for line in train:
         for symbol in line:
             vocabulary.add(symbol)
+    
+    for line in dev:
+        for symbol in line:
+            vocabulary.add(symbol)
+    
+    for line in test:
+        for symbol in line:
+            vocabulary.add(symbol)
+
     return sorted(vocabulary)
-    
-def symbols_to_indices(vocabulary):
-    return {symbol:i for i, symbol in enumerate(vocabulary)}
-    
-def indices_to_symbols(vocabulary):
-    return {i:symbol for i, symbol  in enumerate(vocabulary)}
 
-def raw_data_to_indices(data, symbol_to_index):
-    return [[symbol_to_index[symbol] for symbol in seq] for seq in data]
+def map_symbols_and_indices(vocabulary):
+    symbol_to_index = {word: i for i, word in enumerate(vocabulary)}
+    index_to_symbol = {i: word for i, word in enumerate(vocabulary)}
+    return symbol_to_index, index_to_symbol
 
-def prepare_data(src_file, trg_file):
-    src, trg = read_data(src_file, trg_file)
-    # print(src)
-    # print(trg)
-    src_vocab = create_vocabulary(src)
-    trg_vocab = create_vocabulary(trg)
-    
-    src_symbol_to_index = symbols_to_indices(src_vocab)
-    trg_symbol_to_index = symbols_to_indices(trg_vocab)
-    
-    src_index_to_symbol = indices_to_symbols(src_vocab)
-    trg_index_to_symbol = indices_to_symbols(trg_vocab)
-    
-    src_indices = raw_data_to_indices(src, src_symbol_to_index)
-    trg_indices = raw_data_to_indices(trg, trg_symbol_to_index)
-    
-    return src_indices, trg_indices, src_vocab, trg_vocab, trg
-    
+def symbol_to_indices(raw_data, symbol_to_index):
+    return [[symbol_to_index[symbol]  for symbol in seq] for seq in raw_data]
 
-def create_results_dir():
-    results = "./results"
-    if not os.path.exists("./results"):
-        os.makedirs(results)
-
-# prepare_data("../data/train.src", "../data/train.trg")
+def create_dir(dirname):
+    directory = "./" + dirname
+    if not os.path.exists(directory):
+        os.makedirs(directory)
