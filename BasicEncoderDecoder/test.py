@@ -79,7 +79,7 @@ def main():
 
     bleu_score = test(src_input, trg_input, encoder, decoder, index_to_symbol_trg, test_trg)
 
-    print(bleu_score)
+    print(f"Bleu score on test set is: {bleu_score}")
 
 
 if __name__ == "__main__":
