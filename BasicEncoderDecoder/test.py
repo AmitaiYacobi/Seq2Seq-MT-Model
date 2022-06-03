@@ -1,5 +1,6 @@
 import sys
 import torch
+import optparse
 import sacrebleu
 import numpy as np
 import matplotlib.pyplot as plt
@@ -54,9 +55,15 @@ def test(src_input, trg_input, encoder, decoder, index_to_symbol_trg, test_trg_d
     return  bleu.score
 
 def main():
+    parser = optparse.OptionParser()
+    parser.add_option("-b", dest="is_should_run_best_results", default="no")
+    
+    (opts, args) = parser.parse_args()
+
     test_src_file = sys.argv[1]
     test_trg_file = sys.argv[2]
   
+
     test_src, test_trg = read_data(test_src_file, test_trg_file)
     
     vocabs = torch.load("./vocabs/vocabs")
@@ -65,9 +72,13 @@ def main():
     encoder = Encoder(vocab_size=len(src_vocab), embedding_dim=128, hidden_dim=256)
     decoder = Decoder(vocab_size=len(trg_vocab), encoder_out_dim=256, embedding_dim=128, hidden_dim=256)
     
-    encoder.load_state_dict(torch.load('./results/encoder')) 
-    decoder.load_state_dict(torch.load('./results/decoder'))
-
+    if opts.is_should_run_best_results == "yes":
+        encoder.load_state_dict(torch.load('./best_results/encoder')) 
+        decoder.load_state_dict(torch.load('./best_results/decoder'))
+    else:
+        encoder.load_state_dict(torch.load('./results/encoder')) 
+        decoder.load_state_dict(torch.load('./results/decoder'))
+    
     symbol_to_index_src, index_to_symbol_src = map_symbols_and_indices(src_vocab)
     symbol_to_index_trg, index_to_symbol_trg = map_symbols_and_indices(trg_vocab)
 
