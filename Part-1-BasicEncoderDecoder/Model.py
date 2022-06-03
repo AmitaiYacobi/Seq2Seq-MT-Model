@@ -7,6 +7,7 @@ from torch.nn import functional as F
 
 from Encoder import *
 from Decoder import *
+from utils import BEGIN_SYMBOL, END_SYMBOL
 
 class Seq2SeqModel:
     def __init__(
@@ -26,23 +27,27 @@ class Seq2SeqModel:
         self.dev_trg_data = dev_trg_data
         self.index_to_symbol_trg = index_to_symbol_trg
 
+        # Make the refs to be one list of sequences from the dev target data (not list of lists)
+        # because that is how the refs should be represented for the corpus_bleu function
+        self.refs = [' '.join(ref) for ref in self.dev_trg_data]
+
         self.train_src_input = [torch.LongTensor(seq) for seq in train_src_indices]
         self.train_trg_input = [torch.LongTensor(seq) for seq in train_trg_indices]
         
         self.dev_src_input = [torch.LongTensor(seq) for seq in dev_src_indices]
         self.dev_trg_input = [torch.LongTensor(seq) for seq in dev_trg_indices]
         
-        self.encoder = Encoder(vocab_size=len(src_vocab), embedding_dim=128, hidden_dim=128)
-        self.decoder = Decoder(vocab_size= len(trg_vocab), embedding_dim=128, hidden_dim=256)
+        self.encoder = Encoder(vocab_size=len(src_vocab), embedding_dim=128, hidden_dim=256)
+        self.decoder = Decoder(vocab_size=len(trg_vocab), encoder_out_dim=256, embedding_dim=128, hidden_dim=256)
         
-        self.encoder_optim = optim.Adam(self.encoder.parameters(), lr=0.0007)
-        self.decoder_optim = optim.Adam(self.decoder.parameters(), lr=0.0007)
+        self.encoder_optim = optim.Adam(self.encoder.parameters(), lr=0.0005)
+        self.decoder_optim = optim.Adam(self.decoder.parameters(), lr=0.0005)
         
         self.loss_function = nn.NLLLoss()
         
         
     def epoch(self, src, trg):
-        loss_sum = 0
+        epoch_loss = 0
         for i , (src_seq, trg_seq) in enumerate(zip(src, trg)):
             seq_loss = 0
             self.encoder_optim.zero_grad()
@@ -64,13 +69,13 @@ class Seq2SeqModel:
                 # Sum the loss of every symbol in the current sequence
                 seq_loss += self.loss_function(decoder_output, next_symbol)
             
-            loss_sum += (seq_loss.item() / (trg_seq_len - 1))
+            epoch_loss += (seq_loss.item())
             seq_loss.backward()
             
             self.encoder_optim.step()
             self.decoder_optim.step()
             
-        return loss_sum
+        return epoch_loss
     
     def shuffle_data(self, src, trg):
         zipped_data = list(zip(src, trg))
@@ -94,12 +99,12 @@ class Seq2SeqModel:
             # Shuffle the data in every epoch
             src, trg = self.shuffle_data(train_src, train_trg)
             
-            # Epoch
+            # Make the core of the epoch
             epoch_loss = self.epoch(src, trg)
+            dev_loss, bleu_score = self.validate()
 
             # Average loss for the current epoch
             train_loss = epoch_loss / len(train_src)
-            dev_loss, bleu_score = self.validate()
 
             train_losses.append(train_loss)
             dev_losses.append(dev_loss)
@@ -123,7 +128,7 @@ class Seq2SeqModel:
         return train_losses, dev_losses, bleu_scores
         
     def validate(self):
-        loss_sum = 0
+        epoch_loss = 0
         predictions = []
         
         dev_src = self.dev_src_input
@@ -152,18 +157,17 @@ class Seq2SeqModel:
                     # Sum the loss of every symbol in the current sequence
                     seq_loss += self.loss_function(decoder_output, next_symbol)
                 
-                loss_sum += (seq_loss.item() / (trg_seq_len - 1))
-                output_symbols, begin_symbol = self.predict_output_symbols(trg_seq[0], encoder_output)
-                predictions.append(' '.join([begin_symbol] + output_symbols))
+                epoch_loss += (seq_loss.item())
+                output_symbols = self.predict_output_symbols(trg_seq[0], encoder_output)
+                predictions.append(' '.join(output_symbols))
 
-            dev_loss = loss_sum / len(dev_src)
-            refs = [' '.join(ref) for ref in self.dev_trg_data]
-            bleu = sacrebleu.corpus_bleu(predictions, [refs])
+            dev_loss = epoch_loss / len(dev_src)
+            bleu = sacrebleu.corpus_bleu(predictions, [self.refs])
         
         return dev_loss, bleu.score
 
            
-    def predict_output_symbols(self, first_symbol, encoder_output, begin_symbol='<s>', end_symbol='</s>'):
+    def predict_output_symbols(self, first_symbol, encoder_output):
         max_trg_seq_len = max([len(seq) for seq in self.dev_trg_input])
         hidden_state = torch.zeros(1, 1, self.decoder.hidden_dim), torch.zeros(1, 1, self.decoder.hidden_dim)
         
@@ -175,9 +179,9 @@ class Seq2SeqModel:
             decoder_next_input = np.argmax(decoder_output.data, axis=1)
             predicted_symbol = self.index_to_symbol_trg[decoder_next_input.item()]
             output_symbols.append(predicted_symbol)
-
             # Stop if the model predicted the end symbol - '</s>'
-            if predicted_symbol == end_symbol:
+            if predicted_symbol == END_SYMBOL:
                 break
             
-        return output_symbols, begin_symbol
+        output_symbols = [BEGIN_SYMBOL] + output_symbols
+        return output_symbols

@@ -35,7 +35,7 @@ def map_symbols_and_indices(vocabulary):
     index_to_symbol = {i: word for i, word in enumerate(vocabulary)}
     return symbol_to_index, index_to_symbol
 
-def symbol_to_indices(raw_data, symbol_to_index):
+def symbols_to_indices(raw_data, symbol_to_index):
     return [[symbol_to_index[symbol]  for symbol in seq] for seq in raw_data]
 
 def create_dir(dirname):

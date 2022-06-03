@@ -2,7 +2,7 @@ import sys
 import matplotlib.pyplot as plt
 
 from utils import *
-from Seq2SeqModel import *
+from Model import *
 
 def main():
     train_src_file = sys.argv[1]
@@ -18,13 +18,15 @@ def main():
 
     src_vocab = create_vocabulary(train_src, dev_src, test_src)
     trg_vocab = create_vocabulary(train_trg, dev_trg, test_trg)
+
     symbol_to_index_src, index_to_symbol_src = map_symbols_and_indices(src_vocab)
     symbol_to_index_trg, index_to_symbol_trg = map_symbols_and_indices(trg_vocab)
-    train_src_indices = symbol_to_indices(train_src, symbol_to_index_src)
-    train_trg_indices = symbol_to_indices(train_trg, symbol_to_index_trg) 
+    
+    train_src_indices = symbols_to_indices(train_src, symbol_to_index_src)
+    train_trg_indices = symbols_to_indices(train_trg, symbol_to_index_trg) 
 
-    dev_src_indices = symbol_to_indices(dev_src, symbol_to_index_src)
-    dev_trg_indices = symbol_to_indices(dev_trg, symbol_to_index_trg)
+    dev_src_indices = symbols_to_indices(dev_src, symbol_to_index_src)
+    dev_trg_indices = symbols_to_indices(dev_trg, symbol_to_index_trg)
     
     create_dir("results")
     model = Seq2SeqModel(
@@ -39,26 +41,23 @@ def main():
     )
     
     train_losses, dev_losses, bleu_scores = model.train()
-
-
     
+    epochs = [int(i) for i in range(len(bleu_scores))]
+
     plt.title("Blue scores")
-    ticks = [i for i in range(1, len(bleu_scores) + 1)]
-    plt.plot(ticks, bleu_scores, color='blue')
+    plt.plot(epochs, bleu_scores, color='blue')
     plt.ylabel("Score")
     plt.xlabel("Epochs")
-    plt.xticks(ticks)
+    plt.xticks(epochs)
     plt.show()
 
-    plt.title("Losses")
-    ticks = [i for i in range(1, len(train_losses) + 1)]
-    ticks = [i for i in range(1, len(dev_losses) + 1)]
-    plt.plot(ticks, train_losses, color='green', label='train losses')
-    plt.plot(ticks, dev_losses, color='blue', label='dev losses')
+    plt.title("Loss")
+    plt.plot(epochs, train_losses, color='green', label='train loss')
+    plt.plot(epochs, dev_losses, color='blue', label='dev loss')
     plt.ylabel("Loss")
     plt.xlabel("Epochs")
-    plt.xticks(ticks)
-    plt.legend("losses.png")
+    plt.xticks(epochs)
+    plt.legend()
     plt.show()
 
     create_dir("vocabs")

@@ -8,14 +8,12 @@ from Encoder import *
 from Decoder import *
 from utils import *
 
-BEGIN_SYMBOL = '<s>'
-END_SYMBOL = '</s>'
-
 def predict_output_symbols(decoder, index_to_symbol_trg, first_symbol, encoder_output, trg_input):
-    max_trg_seq_len = max([len(seq) for seq in trg_input])
-    decoder_hidden_state = torch.zeros(1, 1, decoder.hidden_dim), torch.zeros(1, 1, decoder.hidden_dim)
-    
+
     output_symbols = []
+    max_trg_seq_len = max([len(seq) for seq in trg_input])
+    
+    decoder_hidden_state = torch.zeros(1, 1, decoder.hidden_dim), torch.zeros(1, 1, decoder.hidden_dim)
     decoder_next_input = first_symbol
 
     for i in range(max_trg_seq_len):
@@ -27,14 +25,21 @@ def predict_output_symbols(decoder, index_to_symbol_trg, first_symbol, encoder_o
         # Stop if the model predicted the end symbol - '</s>'
         if predicted_symbol == END_SYMBOL:
             break
-        
+
+    output_symbols = [BEGIN_SYMBOL] + output_symbols    
     return output_symbols
 
 def test(src_input, trg_input, encoder, decoder, index_to_symbol_trg, test_trg_data):
+
     predictions = []
+    refs = [' '.join(ref) for ref in test_trg_data]
     
+    encoder.eval()
+    decoder.eval()
+
     with torch.no_grad():
         for i ,(src_seq, trg_seq) in enumerate(zip(src_input, trg_input)):
+
             src_seq_len = src_seq.size(0)
             encoder_hidden_state = torch.zeros(1, 1, encoder.hidden_dim), torch.zeros(1, 1, encoder.hidden_dim)
 
@@ -42,12 +47,8 @@ def test(src_input, trg_input, encoder, decoder, index_to_symbol_trg, test_trg_d
                 encoder_output, encoder_hidden_state = encoder(src_seq[i], encoder_hidden_state)
         
             output_symbols = predict_output_symbols(decoder, index_to_symbol_trg, trg_seq[0], encoder_output, trg_input)
-            predictions.append(' '.join([BEGIN_SYMBOL] + output_symbols))
+            predictions.append(' '.join(output_symbols))
 
-        refs = [' '.join(ref) for ref in test_trg_data]
-        print(refs)
-        print("#################")
-        print(predictions)
         bleu = sacrebleu.corpus_bleu(predictions, [refs])
     
     return  bleu.score
@@ -61,20 +62,17 @@ def main():
     vocabs = torch.load("./vocabs/vocabs")
     src_vocab = vocabs['src_vocab']
     trg_vocab = vocabs['trg_vocab']
-    encoder = Encoder(vocab_size=len(src_vocab), embedding_dim=128, hidden_dim=128)
-    decoder = Decoder(vocab_size= len(trg_vocab), embedding_dim=128, hidden_dim=256)
+    encoder = Encoder(vocab_size=len(src_vocab), embedding_dim=128, hidden_dim=256)
+    decoder = Decoder(vocab_size=len(trg_vocab), encoder_out_dim=256, embedding_dim=128, hidden_dim=256)
     
-    encoder.load_state_dict(torch.load('./results/encoder'))
+    encoder.load_state_dict(torch.load('./results/encoder')) 
     decoder.load_state_dict(torch.load('./results/decoder'))
-
-    encoder.eval()
-    decoder.eval()
 
     symbol_to_index_src, index_to_symbol_src = map_symbols_and_indices(src_vocab)
     symbol_to_index_trg, index_to_symbol_trg = map_symbols_and_indices(trg_vocab)
 
-    test_src_indices = symbol_to_indices(test_src, symbol_to_index_src)
-    test_trg_indices = symbol_to_indices(test_trg, symbol_to_index_trg) 
+    test_src_indices = symbols_to_indices(test_src, symbol_to_index_src)
+    test_trg_indices = symbols_to_indices(test_trg, symbol_to_index_trg) 
 
     src_input = [torch.LongTensor(x) for x in test_src_indices]
     trg_input = [torch.LongTensor(x) for x in test_trg_indices]
