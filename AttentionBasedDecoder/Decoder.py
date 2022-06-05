@@ -18,8 +18,8 @@ class Decoder(nn.Module):
         # for the score(ht, hs_hat) value.
         # according to the paper it is suppose to be multiplied by tanh(Wa[ht;hs_hat]). 
         # It gave me much better results!! 
-        self.va = nn.Parameter(torch.rand(self.hidden_dim) * 0.1)
-
+        self.va = nn.Linear(self.hidden_dim,1)
+        
         self.embedding = nn.Embedding(
             num_embeddings=self.vocab_size, 
             embedding_dim = self.embedding_dim
@@ -35,7 +35,7 @@ class Decoder(nn.Module):
             self.hidden_dim
         )
 
-        self.attention = nn.Linear(
+        self.attention = Attention(
             self.encoder_hidden_dim + self.hidden_dim,
             self.hidden_dim
         )
@@ -57,7 +57,7 @@ class Decoder(nn.Module):
             # tanh(Wa[ht;hs_hat])
             score = torch.tanh(self.score(ht_hs_hat)).view(-1)
             # score(ht,hs_hat) = va * tanh(Wa[ht;hs_hat]) as mentioned in the paper
-            scores[i] = self.va.dot(score)
+            scores[i] = self.va(score)
         
         # at(s) = align(ht, hs_hat) - normalize attention scores
         normalized_scores = F.softmax(scores, dim=0)

@@ -44,7 +44,7 @@ def main():
     
     epochs = [int(i) for i in range(len(bleu_scores))]
 
-    plt.title("Blue scores")
+    plt.title("Bleu scores")
     plt.plot(epochs, bleu_scores, color='blue')
     plt.ylabel("Score")
     plt.xlabel("Epochs")
