@@ -49,7 +49,6 @@ class Seq2SeqModel:
         
         self.loss_function = nn.NLLLoss()
         
-        
     def epoch(self, src, trg):
         epoch_loss = 0
         for i , (src_seq, trg_seq) in enumerate(zip(src, trg)):
