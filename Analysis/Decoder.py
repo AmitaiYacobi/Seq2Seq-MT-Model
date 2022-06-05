@@ -68,4 +68,4 @@ class Decoder(nn.Module):
         ht_tilda = torch.tanh(self.attention(ct_ht))
         output = F.log_softmax(self.output_for_softmax(ht_tilda.view(1, -1)), dim=1)
         
-        return output, next_hidden
+        return output, next_hidden, normalized_scores[0]

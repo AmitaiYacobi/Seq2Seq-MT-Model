@@ -28,7 +28,12 @@ def main():
     dev_src_indices = symbols_to_indices(dev_src, symbol_to_index_src)
     dev_trg_indices = symbols_to_indices(dev_trg, symbol_to_index_trg)
     
+    example_to_plot = 38
+
     create_dir("results")
+    create_dir("plots")
+    create_dir("attention_weights")
+
     model = Seq2SeqModel(
         train_src_indices,
         train_trg_indices,
@@ -36,8 +41,10 @@ def main():
         dev_trg_indices,
         symbol_to_index_src,
         symbol_to_index_trg,
+        dev_src,
         dev_trg, 
-        index_to_symbol_trg
+        index_to_symbol_trg,
+        example_to_plot
     )
     
     train_losses, dev_losses, bleu_scores = model.train()
