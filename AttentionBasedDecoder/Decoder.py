@@ -65,6 +65,7 @@ class Decoder(nn.Module):
         # ct = ∑ (aj*hj_hat)
         ct = normalized_scores.bmm(encoder_states.unsqueeze(0))
         ct_ht = torch.cat((ct, ht), dim=2)
+        # ht_tilda = tanh(Wc[ct;ht])
         ht_tilda = torch.tanh(self.attention(ct_ht))
         output = F.log_softmax(self.output_for_softmax(ht_tilda.view(1, -1)), dim=1)
         
