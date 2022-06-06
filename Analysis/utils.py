@@ -58,7 +58,7 @@ def visualize_attention_weights(name, src_example, trg_example, weights):
     
 
 def dump_attention_weights(attention_weights, epoch, ):
-        f = open('./attention_weights/attentions_weights.json', 'w+', encoding='utf-8')
+        f = open('./attention_weights/attentions_weights.json', 'a+', encoding='utf-8')
         weights = [attention.tolist()[0] for attention in attention_weights]
         f.write(f"Epoch {epoch}:\n")
         for weight in weights:
