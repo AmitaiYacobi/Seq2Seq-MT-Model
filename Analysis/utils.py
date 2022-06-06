@@ -47,20 +47,15 @@ def create_dir(dirname):
         os.makedirs(directory)
 
 def visualize_attention_weights(name, src_example, trg_example, weights):
-    fig, ax = plt.subplots(1, figsize=(8, 8), dpi=192)
-    fig.subplots_adjust(left=0, right=1, bottom=0, top=1)
-
+    fig, ax = plt.subplots()
     ax.set_xticks(np.arange(len(src_example) + 2))
     ax.set_yticks(np.arange(len(src_example) + 1))
-
     ax = sb.heatmap(weights.numpy(), square=True, cmap="Blues", xticklabels=['begin'] + src_example + ['end'], cbar=False)
-
     ax.set_yticklabels(trg_example + ['end'], rotation=360)
-
     ax.set(title=f"attention-based alignment:\n{' '.join(src_example)} -> {' '.join(trg_example)}\n")
-
     fig.tight_layout()
     plt.savefig("./plots/" + name + ".png", dpi=192, bbox_inches="tight")
+    
 
 def dump_attention_weights(attention_weights, epoch, ):
         f = open('./attention_weights/attentions_weights.json', 'w+', encoding='utf-8')

@@ -17,3 +17,10 @@ For example -
 
 python3 train.py ../data/train.src ../data/train.trg ../data/dev.src ../data/dev.trg ../data/test.src ../data/test.trg   
 
+==============================
+Visualization:
+All of the heatmaps visualizations are located in the directory "plots"
+
+==============================
+Weights:
+The attention weights for the chosen example are located in the directory "attention_weights"
